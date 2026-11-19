@@ -37,6 +37,8 @@
   .toggle button{flex:1;border:1.5px solid var(--line);background:transparent;color:var(--muted);
     font:inherit;font-size:13px;padding:7px;border-radius:10px;cursor:pointer}
   .toggle button.on{border-color:var(--gold);color:var(--gold);background:var(--soft);font-weight:700}
+  .karat button{font-size:17px;font-weight:700}
+  .hint{margin-top:8px;font-size:14px;color:var(--gold);font-weight:700;min-height:1em}
   .row2{display:flex;gap:10px;align-items:center;margin-bottom:6px}
   .row2 input[type=checkbox]{width:18px;height:18px;accent-color:var(--gold)}
   .row2 label{margin:0;font-weight:500}
@@ -69,14 +71,29 @@
     </div>
 
     <div class="field">
-      <label for="price">سعر الجرام</label>
+      <label>العيار</label>
+      <div class="toggle karat">
+        <button type="button" data-k="24">24</button>
+        <button type="button" data-k="22">22</button>
+        <button type="button" data-k="21" class="on">21</button>
+        <button type="button" data-k="18">18</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="price" id="priceLabel">سعر جرام عيار 24</label>
       <div class="input"><input id="price" type="number" inputmode="decimal" min="0" step="any" placeholder="0"><span>للجرام</span></div>
+      <div class="toggle pmode">
+        <button type="button" data-p="base" class="on">أُدخل سعر عيار 24</button>
+        <button type="button" data-p="direct">أُدخل سعر العيار المختار</button>
+      </div>
+      <div class="hint" id="karatHint"></div>
     </div>
 
     <div class="field">
       <label for="making">المصنعية</label>
       <div class="input"><input id="making" type="number" inputmode="decimal" min="0" step="any" placeholder="0"><span id="makingUnit">للجرام</span></div>
-      <div class="toggle">
+      <div class="toggle mmode">
         <button type="button" data-mode="gram" class="on">لكل جرام</button>
         <button type="button" data-mode="total">مبلغ إجمالي</button>
       </div>
@@ -89,6 +106,7 @@
     </div>
 
     <div class="result">
+      <div class="line"><span id="rKaratLbl">سعر جرام عيار 21</span><b id="rKarat">0.00</b></div>
       <div class="line"><span>قيمة الذهب</span><b id="rGold">0.00</b></div>
       <div class="line"><span>المصنعية</span><b id="rMaking">0.00</b></div>
       <div class="line" id="vatLine" style="display:none"><span>الضريبة</span><b id="rVat">0.00</b></div>
@@ -105,14 +123,20 @@
 
 <script>
   const $ = id => document.getElementById(id);
-  let mode = 'gram';
+  let mode = 'gram', karat = 21, pmode = 'base';
   const fmt = n => n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   const num = id => { const v = parseFloat($(id).value); return isFinite(v) && v > 0 ? v : 0; };
   let last = {};
 
   function calc(){
-    const g = num('grams'), p = num('price'), m = num('making');
+    const g = num('grams'), entered = num('price'), m = num('making');
+    const p = pmode === 'base' ? entered * karat / 24 : entered;
     const gold = g * p;
+    $('priceLabel').textContent = pmode === 'base' ? 'سعر جرام عيار 24' : 'سعر جرام عيار ' + karat;
+    $('rKaratLbl').textContent = 'سعر جرام عيار ' + karat;
+    $('rKarat').textContent = fmt(p);
+    $('karatHint').textContent = pmode === 'base' && karat !== 24 && entered > 0
+      ? 'سعر عيار ' + karat + ' = ' + fmt(p) + ' (نقاوة ' + (karat/24*100).toFixed(1) + '%)' : '';
     const making = mode === 'gram' ? g * m : m;
     const sub = gold + making;
     const vatOn = $('vatOn').checked;
@@ -127,9 +151,17 @@
     last = {g, p, m, gold, making, vat, total, vatOn};
   }
 
-  document.querySelectorAll('.toggle button').forEach(b => b.addEventListener('click', () => {
+  function group(sel, fn){
+    document.querySelectorAll(sel + ' button').forEach(b => b.addEventListener('click', () => {
+      document.querySelectorAll(sel + ' button').forEach(x => x.classList.toggle('on', x === b));
+      fn(b); calc();
+    }));
+  }
+  group('.karat', b => karat = +b.dataset.k);
+  group('.pmode', b => pmode = b.dataset.p);
+  document.querySelectorAll('.mmode button').forEach(b => b.addEventListener('click', () => {
     mode = b.dataset.mode;
-    document.querySelectorAll('.toggle button').forEach(x => x.classList.toggle('on', x === b));
+    document.querySelectorAll('.mmode button').forEach(x => x.classList.toggle('on', x === b));
     $('makingUnit').textContent = mode === 'gram' ? 'للجرام' : 'إجمالي';
     calc();
   }));
@@ -138,7 +170,7 @@
   $('resetBtn').addEventListener('click', () => { ['grams','price','making'].forEach(id => $(id).value=''); calc(); $('grams').focus(); });
 
   $('copyBtn').addEventListener('click', async () => {
-    const t = `الوزن: ${last.g} جرام\nسعر الجرام: ${fmt(last.p)}\nقيمة الذهب: ${fmt(last.gold)}\nالمصنعية: ${fmt(last.making)}` +
+    const t = `العيار: ${karat}\nالوزن: ${last.g} جرام\nسعر الجرام: ${fmt(last.p)}\nقيمة الذهب: ${fmt(last.gold)}\nالمصنعية: ${fmt(last.making)}` +
       (last.vatOn ? `\nالضريبة: ${fmt(last.vat)}` : '') + `\nالإجمالي: ${fmt(last.total)}`;
     const btn = $('copyBtn');
     try { await navigator.clipboard.writeText(t); btn.textContent = 'تم النسخ ✓'; }
