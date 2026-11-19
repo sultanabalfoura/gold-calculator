@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>حاسبة سعر الذهب</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf7f0; --card:#ffffff; --ink:#2b2416; --muted:#7a6f5c;
+    --gold:#b8892b; --gold-2:#e7c873; --line:#ece4d2; --soft:#fbf4e2;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#16130d; --card:#211c13; --ink:#f3ead6; --muted:#a99c82;
+      --gold:#e2b552; --gold-2:#8a6a24; --line:#352d1f; --soft:#2a2316; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Tajawal',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+    min-height:100vh;display:flex;justify-content:center;align-items:flex-start;padding:32px 16px}
+  .wrap{width:100%;max-width:440px}
+  header{text-align:center;margin-bottom:20px}
+  .coin{width:56px;height:56px;border-radius:50%;margin:0 auto 10px;
+    background:radial-gradient(circle at 35% 30%,#fff3c4,var(--gold-2) 40%,var(--gold) 80%);
+    box-shadow:0 4px 14px rgba(184,137,43,.35)}
+  h1{margin:0;font-size:26px;font-weight:800}
+  header p{margin:4px 0 0;color:var(--muted);font-size:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px}
+  label{display:block;font-weight:700;font-size:15px;margin-bottom:6px}
+  .field{margin-bottom:16px}
+  .input{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:12px;
+    background:var(--bg);transition:border-color .15s}
+  .input:focus-within{border-color:var(--gold)}
+  .input input{flex:1;border:0;background:transparent;color:var(--ink);font:inherit;font-size:18px;
+    padding:12px 14px;outline:none;min-width:0;direction:ltr;text-align:right}
+  .input span{padding:0 14px;color:var(--muted);font-size:14px;white-space:nowrap}
+  .toggle{display:flex;gap:6px;margin-top:8px}
+  .toggle button{flex:1;border:1.5px solid var(--line);background:transparent;color:var(--muted);
+    font:inherit;font-size:13px;padding:7px;border-radius:10px;cursor:pointer}
+  .toggle button.on{border-color:var(--gold);color:var(--gold);background:var(--soft);font-weight:700}
+  .row2{display:flex;gap:10px;align-items:center;margin-bottom:6px}
+  .row2 input[type=checkbox]{width:18px;height:18px;accent-color:var(--gold)}
+  .row2 label{margin:0;font-weight:500}
+  .result{margin-top:18px;background:var(--soft);border-radius:14px;padding:16px}
+  .line{display:flex;justify-content:space-between;padding:7px 0;font-size:15px;color:var(--muted)}
+  .line b{color:var(--ink);font-weight:700;direction:ltr}
+  .total{border-top:1.5px dashed var(--gold-2);margin-top:6px;padding-top:12px;
+    display:flex;justify-content:space-between;align-items:baseline}
+  .total span{font-weight:700}
+  .total b{font-size:28px;font-weight:800;color:var(--gold);direction:ltr}
+  .per{text-align:center;color:var(--muted);font-size:13px;margin-top:8px}
+  .actions{display:flex;gap:10px;margin-top:14px}
+  .actions button{flex:1;font:inherit;font-size:15px;font-weight:700;padding:11px;border-radius:12px;cursor:pointer}
+  .copy{background:var(--gold);color:#fff;border:0}
+  .reset{background:transparent;color:var(--muted);border:1.5px solid var(--line)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="coin"></div>
+    <h1>حاسبة سعر الذهب</h1>
+    <p>أدخل الوزن وسعر الجرام والمصنعية</p>
+  </header>
+
+  <div class="card">
+    <div class="field">
+      <label for="grams">الوزن</label>
+      <div class="input"><input id="grams" type="number" inputmode="decimal" min="0" step="any" placeholder="0"><span>جرام</span></div>
+    </div>
+
+    <div class="field">
+      <label for="price">سعر الجرام</label>
+      <div class="input"><input id="price" type="number" inputmode="decimal" min="0" step="any" placeholder="0"><span>للجرام</span></div>
+    </div>
+
+    <div class="field">
+      <label for="making">المصنعية</label>
+      <div class="input"><input id="making" type="number" inputmode="decimal" min="0" step="any" placeholder="0"><span id="makingUnit">للجرام</span></div>
+      <div class="toggle">
+        <button type="button" data-mode="gram" class="on">لكل جرام</button>
+        <button type="button" data-mode="total">مبلغ إجمالي</button>
+      </div>
+    </div>
+
+    <div class="row2">
+      <input type="checkbox" id="vatOn">
+      <label for="vatOn">إضافة ضريبة القيمة المضافة</label>
+      <div class="input" style="width:90px;margin-inline-start:auto"><input id="vat" type="number" min="0" step="any" value="5" style="padding:6px 8px;font-size:15px"><span style="padding:0 8px">%</span></div>
+    </div>
+
+    <div class="result">
+      <div class="line"><span>قيمة الذهب</span><b id="rGold">0.00</b></div>
+      <div class="line"><span>المصنعية</span><b id="rMaking">0.00</b></div>
+      <div class="line" id="vatLine" style="display:none"><span>الضريبة</span><b id="rVat">0.00</b></div>
+      <div class="total"><span>الإجمالي</span><b id="rTotal">0.00</b></div>
+      <div class="per" id="rPer"></div>
+    </div>
+
+    <div class="actions">
+      <button class="copy" id="copyBtn" type="button">نسخ النتيجة</button>
+      <button class="reset" id="resetBtn" type="button">مسح</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  let mode = 'gram';
+  const fmt = n => n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const num = id => { const v = parseFloat($(id).value); return isFinite(v) && v > 0 ? v : 0; };
+  let last = {};
+
+  function calc(){
+    const g = num('grams'), p = num('price'), m = num('making');
+    const gold = g * p;
+    const making = mode === 'gram' ? g * m : m;
+    const sub = gold + making;
+    const vatOn = $('vatOn').checked;
+    const vat = vatOn ? sub * num('vat') / 100 : 0;
+    const total = sub + vat;
+    $('rGold').textContent = fmt(gold);
+    $('rMaking').textContent = fmt(making);
+    $('rVat').textContent = fmt(vat);
+    $('vatLine').style.display = vatOn ? 'flex' : 'none';
+    $('rTotal').textContent = fmt(total);
+    $('rPer').textContent = g > 0 && total > 0 ? 'سعر الجرام الفعلي شامل المصنعية: ' + fmt(total / g) : '';
+    last = {g, p, m, gold, making, vat, total, vatOn};
+  }
+
+  document.querySelectorAll('.toggle button').forEach(b => b.addEventListener('click', () => {
+    mode = b.dataset.mode;
+    document.querySelectorAll('.toggle button').forEach(x => x.classList.toggle('on', x === b));
+    $('makingUnit').textContent = mode === 'gram' ? 'للجرام' : 'إجمالي';
+    calc();
+  }));
+  ['grams','price','making','vat','vatOn'].forEach(id => $(id).addEventListener('input', calc));
+
+  $('resetBtn').addEventListener('click', () => { ['grams','price','making'].forEach(id => $(id).value=''); calc(); $('grams').focus(); });
+
+  $('copyBtn').addEventListener('click', async () => {
+    const t = `الوزن: ${last.g} جرام\nسعر الجرام: ${fmt(last.p)}\nقيمة الذهب: ${fmt(last.gold)}\nالمصنعية: ${fmt(last.making)}` +
+      (last.vatOn ? `\nالضريبة: ${fmt(last.vat)}` : '') + `\nالإجمالي: ${fmt(last.total)}`;
+    const btn = $('copyBtn');
+    try { await navigator.clipboard.writeText(t); btn.textContent = 'تم النسخ ✓'; }
+    catch(e){ btn.textContent = 'تعذّر النسخ'; }
+    setTimeout(() => btn.textContent = 'نسخ النتيجة', 1500);
+  });
+
+  calc();
+</script>
+</body>
+</html>
